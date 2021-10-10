@@ -1,11 +1,40 @@
-'use strict';
+"use strict";
 
-const AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-dependencies
+const Bucket = require("./utils/Bucket");
+const Dynamo = require("./utils/Dynamo");
 
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
-
-module.exports.extractMetadata = async (event, context) => {
+const extractMetadata = async (event) => {
+  Dynamo.createImageMetadataOnDB(event.Records[0].s3.object);
 };
 
-module.exports.getMetadata = async (event, context) => {
+const getMetadata = async (event) => {
+  const imageMetadata = await Dynamo.getImageOnDB(
+    event.pathParameters.s3objectkey
+  );
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ ...imageMetadata }),
+  };
 };
+
+const downloadImage = async (event) => {
+  const imageUrl = await Bucket.getImageUrl(
+    "uploads/" + event.pathParameters.s3objectkey
+  );
+
+  return {
+    statusCode: 302,
+    headers: {
+      Location: imageUrl,
+    },
+  };
+};
+
+const getInfo = async () => {
+  return {
+    statusCode: 200,
+    body: JSON.stringify(await Dynamo.getDBInfo()),
+  };
+};
+
+module.exports = { extractMetadata, getMetadata, downloadImage, getInfo };

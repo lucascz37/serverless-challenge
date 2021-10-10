@@ -1,14 +1,16 @@
 service: serverless-challenge
 
-frameworkVersion: ">=1.1.0"
+frameworkVersion: "2"
 
 provider:
   name: aws
-  runtime: nodejs12.x # python3.6
+  runtime: nodejs14.x # python3.6
+  lambdaHashingVersion: '20201221'
   profile: hackathon
   region: us-east-1
   environment:
     DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    BUCKET_NAME: imagebucket
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -21,6 +23,25 @@ provider:
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
 
 functions:
+  getInfo:
+    handler: handler.getInfo
+    memorySize: 128
+    timeout: 30
+    events: 
+      - http:
+          path: images/info
+          method: get
+          cors: true
+  downloadImage:
+    handler: handler.downloadImage
+    description:
+    memorySize: 128
+    timeout: 30
+    events:
+      - http:
+          path: images/download/{s3objectkey}
+          method: get
+          cors: true
   extractMetadata:
     handler: handler.extractMetadata
     description:
@@ -28,11 +49,23 @@ functions:
     timeout: 30
     events:
       - s3:
-          bucket: bucketname # Escolha o nome do seu bucket que deve ser único
+          bucket: imagebucket
           event: s3:ObjectCreated:*
           rules:
             - prefix: uploads/
             - suffix: .jpg
+      - s3:
+          bucket: imagebucket
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: uploads/
+            - suffix: .jpeg
+      - s3:
+          bucket: imagebucket
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: uploads/
+            - suffix: .png
   getMetadata:
     handler: handler.getMetadata
     description:
@@ -46,6 +79,10 @@ functions:
 
 resources:
   Resources:
+    NewResource:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: imagebucket
     ImagesDynamoDbTable:
       Type: 'AWS::DynamoDB::Table'
       Properties:
@@ -61,3 +98,23 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.DYNAMODB_TABLE}
+
+custom:
+    s3:
+      stages:
+        - dev
+      host: localhost
+      directory: /tmp
+    TableName: ${self:provider.enviroment.DYNAMODB_TABLE}
+    dynamodb:
+        stages:
+            - dev
+        start:
+            port: 8000
+            migrate: true
+            inMemory: true
+
+plugins:
+  - serverless-offline
+  - serverless-dynamodb-local
+  - serverless-s3-local

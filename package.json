@@ -1,0 +1,23 @@
+{
+  "name": "serverless-challenge",
+  "version": "1.0.0",
+  "description": "Build a serverless architecture for image analysis",
+  "main": "handler.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucascz37/serverless-challenge.git"
+  },
+  "author": "Lucas Andrade",
+  "bugs": {
+    "url": "https://github.com/lucascz37/serverless-challenge/issues"
+  },
+  "homepage": "https://github.com/lucascz37/serverless-challenge#readme",
+  "devDependencies": {
+    "serverless-dynamodb-local": "^0.2.40",
+    "serverless-offline": "^8.2.0",
+    "serverless-s3-local": "^0.6.20"
+  },
+  "dependencies": {
+    "image-size": "^1.0.0"
+  }
+}
