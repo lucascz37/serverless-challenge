@@ -6,6 +6,7 @@ const TableName = process.env.DYNAMODB_TABLE;
 
 let dynamoOptions = {};
 
+// Settings to test the application offline
 if (process.env.IS_OFFLINE) {
   dynamoOptions = {
     region: "localhost",
@@ -18,15 +19,19 @@ if (process.env.IS_OFFLINE) {
 const dynamoDb = new AWS.DynamoDB.DocumentClient(dynamoOptions);
 
 const Dynamo = {
+  /**
+   * Create image metadata record on the dynamoDB.
+   * @param {Object} s3Object - object received from the triggered event when placing the file the file on a bucket.
+   */
   async createImageMetadataOnDB(s3Object) {
-    const key = decodeURIComponent(s3Object.key.replace(/\+/g, " "));
+    const key = decodeURIComponent(s3Object.key.replace(/\+/g, " ")); //https://docs.aws.amazon.com/pt_br/lambda/latest/dg/with-s3-example.html
     const object = await bucket.getImage(key);
-    const { width, height } = imageSize(object.Body);
+    const { width, height } = imageSize(object.Body); //extrating image width and height
 
     const data = {
       TableName,
       Item: {
-        s3objectkey: key.split("/")[1],
+        s3objectkey: key.split("/")[1], //spliting "uploads/{imageName}"
         width,
         height,
         contentType: object.ContentType,
@@ -36,6 +41,10 @@ const Dynamo = {
 
     await dynamoDb.put(data).promise();
   },
+  /**
+   * Return image metadata record on the dynamoDB.
+   * @param {string} name - name of the image.
+   */
   async getImageOnDB(name) {
     const params = {
       TableName,
@@ -46,6 +55,9 @@ const Dynamo = {
 
     return data.Item;
   },
+  /**
+   * Performs a scan on the dynamoDB and return biggest image, smallest image and count of imageTypes on the dynamoDB.
+   */
   async getDBInfo() {
     const imageTypes = { "image/jpg": 0, "image/jpeg": 0, "image/png": 0 };
 
